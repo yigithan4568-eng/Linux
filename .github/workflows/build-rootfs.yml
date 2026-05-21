@@ -36,7 +36,7 @@ jobs:
     # ──────────────────────────────────────────────────────────────────────────
     # 0. Bağımlılıklar
     # ──────────────────────────────────────────────────────────────────────────
-    - name: Build bağımlılıklarını kur
+   - name: Build bağımlılıklarını kur
       run: |
         sudo apt-get update -qq
         sudo apt-get install -y --no-install-recommends \
@@ -44,6 +44,7 @@ jobs:
           ca-certificates cpio curl file flex \
           gawk gettext git gperf help2man \
           libexpat1-dev libffi-dev libssl-dev \
+          libselinux-dev \
           libtool libz-dev make ninja-build \
           patch pkg-config python3 rsync \
           squashfs-tools texinfo unzip wget xz-utils \
