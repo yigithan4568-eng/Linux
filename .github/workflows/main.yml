@@ -1,0 +1,334 @@
+name: Build Minimal Rootfs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  BUSYBOX_VERSION: "1.38.0"
+  GLIBC_VERSION: "2.43"
+  OPENRC_VERSION: "0.63"
+  CURL_VERSION: "8.20.0"
+  GIT_VERSION: "2.54.0"
+  NANO_VERSION: "9.0"
+  WGET_VERSION: "1.25.0"
+  ZLIB_VERSION: "1.3.2"
+  OPENSSL_VERSION: "3.6.2"
+  PCRE2_VERSION: "10.46"
+  EXPAT_VERSION: "2.8.1"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential bison flex gawk texinfo \
+            libncurses-dev libssl-dev bc \
+            fakeroot cpio gzip xz-utils \
+            autoconf automake libtool meson ninja-build \
+            cmake libpsl-dev libidn2-dev
+
+      - name: Create Workspace
+        run: mkdir -p $GITHUB_WORKSPACE/{sources,build,rootfs,disk}
+
+      - name: Download Sources
+        working-directory: ${{ github.workspace }}/sources
+        run: |
+          wget -q https://busybox.net/downloads/busybox-${BUSYBOX_VERSION}.tar.bz2
+          wget -q https://ftp.gnu.org/gnu/glibc/glibc-${GLIBC_VERSION}.tar.xz
+          wget -q https://github.com/OpenRC/openrc/archive/${OPENRC_VERSION}.tar.gz -O openrc-${OPENRC_VERSION}.tar.gz
+          wget -q https://curl.se/download/curl-${CURL_VERSION}.tar.xz
+          wget -q https://www.kernel.org/pub/software/scm/git/git-${GIT_VERSION}.tar.xz
+          wget -q https://www.nano-editor.org/dist/v9/nano-${NANO_VERSION}.tar.xz
+          wget -q https://ftp.gnu.org/gnu/wget/wget-${WGET_VERSION}.tar.gz
+          wget -q https://zlib.net/zlib-${ZLIB_VERSION}.tar.xz
+          wget -q https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz
+          wget -q https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VERSION}/pcre2-${PCRE2_VERSION}.tar.gz
+          wget -q https://github.com/libexpat/libexpat/releases/download/R_${EXPAT_VERSION//./_}/expat-${EXPAT_VERSION}.tar.xz
+
+      - name: Extract Sources
+        working-directory: ${{ github.workspace }}/sources
+        run: |
+          for f in *.tar.*; do
+            tar -xf "$f" -C ../build/
+          done
+
+      - name: Build Linux Headers for glibc
+        working-directory: ${{ github.workspace }}/build
+        run: |
+          mkdir -p linux-headers
+          cp -r /usr/include/linux /usr/include/asm* /usr/include/asm-generic linux-headers/ 2>/dev/null || true
+
+      - name: Build glibc
+        working-directory: ${{ github.workspace }}/build/glibc-${GLIBC_VERSION}
+        run: |
+          mkdir -p build && cd build
+          ../configure \
+            --prefix=/usr \
+            --libdir=/usr/lib \
+            --libexecdir=/usr/lib \
+            --enable-kernel=5.15 \
+            --disable-werror \
+            --disable-nscd \
+            --disable-profile \
+            --disable-build-nscd \
+            --enable-bind-now \
+            --with-headers=${{ github.workspace }}/build/linux-headers \
+            CFLAGS="-O2 -s -fno-stack-protector -fomit-frame-pointer"
+          make -j$(nproc)
+          make install DESTDIR=${{ github.workspace }}/rootfs
+
+      - name: Build Busybox
+        working-directory: ${{ github.workspace }}/build/busybox-${BUSYBOX_VERSION}
+        run: |
+          make defconfig
+          sed -i 's/# CONFIG_STATIC is not set/CONFIG_STATIC=n/' .config
+          sed -i 's/CONFIG_SYSROOT=.*/CONFIG_SYSROOT="${{ github.workspace }}\/rootfs"/' .config
+          sed -i 's/# CONFIG_FEATURE_MOUNT_HELPERS is not set/CONFIG_FEATURE_MOUNT_HELPERS=y/' .config
+          make -j$(nproc) CFLAGS="-O2 -s"
+          make CONFIG_PREFIX=${{ github.workspace }}/rootfs install
+
+      - name: Build OpenRC
+        working-directory: ${{ github.workspace }}/build/openrc-${OPENRC_VERSION}
+        run: |
+          meson setup build \
+            -Dprefix=/usr \
+            -Dsysconfdir=/etc \
+            -Dlocalstatedir=/var \
+            -Dpkgconfig=false \
+            -Dnewnet=false \
+            -Dpam=false \
+            -Dselinux=false \
+            -Daudit=false
+          meson compile -C build
+          DESTDIR=${{ github.workspace }}/rootfs meson install -C build
+
+      - name: Build zlib
+        working-directory: ${{ github.workspace }}/build/zlib-${ZLIB_VERSION}
+        run: |
+          ./configure --prefix=/usr
+          make -j$(nproc)
+          make install DESTDIR=${{ github.workspace }}/rootfs
+
+      - name: Build OpenSSL
+        working-directory: ${{ github.workspace }}/build/openssl-${OPENSSL_VERSION}
+        run: |
+          ./config --prefix=/usr --openssldir=/etc/ssl shared zlib
+          make -j$(nproc)
+          make install DESTDIR=${{ github.workspace }}/rootfs
+
+      - name: Build Expat
+        working-directory: ${{ github.workspace }}/build/expat-${EXPAT_VERSION}
+        run: |
+          ./configure --prefix=/usr --disable-static
+          make -j$(nproc)
+          make install DESTDIR=${{ github.workspace }}/rootfs
+
+      - name: Build PCRE2
+        working-directory: ${{ github.workspace }}/build/pcre2-${PCRE2_VERSION}
+        run: |
+          ./configure --prefix=/usr --disable-static --enable-jit
+          make -j$(nproc)
+          make install DESTDIR=${{ github.workspace }}/rootfs
+
+      - name: Build curl
+        working-directory: ${{ github.workspace }}/build/curl-${CURL_VERSION}
+        run: |
+          ./configure --prefix=/usr \
+            --with-openssl \
+            --disable-static \
+            --disable-docs \
+            --disable-manual
+          make -j$(nproc)
+          make install DESTDIR=${{ github.workspace }}/rootfs
+
+      - name: Build wget
+        working-directory: ${{ github.workspace }}/build/wget-${WGET_VERSION}
+        run: |
+          ./configure --prefix=/usr \
+            --with-ssl=openssl \
+            --disable-nls \
+            --disable-ipv6 \
+            --disable-iri
+          make -j$(nproc)
+          make install DESTDIR=${{ github.workspace }}/rootfs
+
+      - name: Build nano
+        working-directory: ${{ github.workspace }}/build/nano-${NANO_VERSION}
+        run: |
+          ./configure --prefix=/usr \
+            --disable-nls \
+            --disable-utf8 \
+            --disable-libmagic \
+            --disable-multibuffer \
+            --disable-speller
+          make -j$(nproc)
+          make install DESTDIR=${{ github.workspace }}/rootfs
+
+      - name: Build git
+        working-directory: ${{ github.workspace }}/build/git-${GIT_VERSION}
+        run: |
+          make configure
+          ./configure --prefix=/usr \
+            --with-openssl \
+            --with-curl \
+            --with-expat \
+            --without-python \
+            --without-tcltk \
+            --disable-nls \
+            --disable-docs \
+            --disable-gtk2 \
+            --disable-p4help \
+            CFLAGS="-O2"
+          make -j$(nproc) NO_PERL=1 NO_PYTHON=1 NO_TCLTK=1
+          make install DESTDIR=${{ github.workspace }}/rootfs NO_PERL=1 NO_PYTHON=1 NO_TCLTK=1
+
+      - name: Setup Rootfs Structure
+        working-directory: ${{ github.workspace }}/rootfs
+        run: |
+          mkdir -p dev proc sys tmp run var/log var/run var/lock \
+                   etc/init.d etc/rc.d etc/local.d root home \
+                   usr/bin usr/sbin usr/lib lib64 boot mnt media
+
+          chmod 1777 tmp
+
+          fakeroot bash -c '
+            mknod -m 622 dev/console c 5 1
+            mknod -m 666 dev/null c 1 3
+            mknod -m 666 dev/zero c 1 5
+            mknod -m 666 dev/random c 1 8
+            mknod -m 666 dev/urandom c 1 9
+            mknod -m 666 dev/tty c 5 0
+            ln -sf /proc/self/fd dev/fd
+            ln -sf /proc/self/fd/0 dev/stdin
+            ln -sf /proc/self/fd/1 dev/stdout
+            ln -sf /proc/self/fd/2 dev/stderr
+          '
+
+          cat > etc/passwd << 'EOF'
+          root:x:0:0:root:/root:/bin/sh
+          EOF
+
+          cat > etc/group << 'EOF'
+          root:x:0:
+          EOF
+
+          cat > etc/shadow << 'EOF'
+          root:*:0:0:99999:7:::
+          EOF
+
+          cat > etc/fstab << 'EOF'
+          proc    /proc   proc    defaults    0   0
+          sysfs   /sys    sysfs   defaults    0   0
+          devtmpfs /dev   devtmpfs defaults    0   0
+          tmpfs   /tmp    tmpfs   defaults,size=50% 0   0
+          tmpfs   /run    tmpfs   defaults,size=10% 0   0
+          EOF
+
+          cat > etc/inittab << 'EOF'
+          ::sysinit:/sbin/openrc sysinit
+          ::wait:/sbin/openrc boot
+          ::once:/sbin/openrc default
+          ::ctrlaltdel:/sbin/reboot
+          ::shutdown:/sbin/openrc shutdown
+          ::restart:/sbin/init
+          EOF
+
+          ln -sf /sbin/init init
+
+          echo "minimal" > etc/hostname
+
+          cat > etc/hosts << 'EOF'
+          127.0.0.1   localhost minimal
+          ::1         localhost
+          EOF
+
+          cat > etc/resolv.conf << 'EOF'
+          nameserver 8.8.8.8
+          nameserver 1.1.1.1
+          EOF
+
+          mkdir -p etc/local.d
+          cat > etc/local.d/network.start << 'EOF'
+          #!/bin/sh
+          ip link set lo up
+          ip addr add 127.0.0.1/8 dev lo
+          EOF
+          chmod +x etc/local.d/network.start
+
+          cat > etc/profile << 'EOF'
+          export PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
+          export PS1='[\u@\h \W]\$ '
+          export HOME=/root
+          cd $HOME
+          EOF
+
+      - name: Strip and Cleanup
+        working-directory: ${{ github.workspace }}/rootfs
+        run: |
+          find . -type f \( -name "*.so*" -o -executable \) -exec strip --strip-debug {} + 2>/dev/null || true
+          find . -type f -name "*.a" -delete 2>/dev/null || true
+
+          rm -rf usr/share/{doc,man,info,locale} 2>/dev/null || true
+          rm -rf usr/lib/pkgconfig 2>/dev/null || true
+          rm -rf usr/include 2>/dev/null || true
+          rm -rf var/cache 2>/dev/null || true
+          rm -f lib/*.a usr/lib/*.a 2>/dev/null || true
+
+          mkdir -p lib_keep lib64_keep
+          for lib in libc.so.6 libm.so.6 libdl.so.2 libpthread.so.0 \
+                     libresolv.so.2 libnss_dns.so.2 libnss_files.so.2 \
+                     librt.so.1 libutil.so.1 ld-linux-x86-64.so.2; do
+            find . -name "$lib" -exec cp -L {} lib_keep/ \; 2>/dev/null || true
+          done
+          find . -name "ld-linux*.so*" -exec cp -L {} lib64_keep/ \; 2>/dev/null || true
+
+          rm -rf lib/* lib64/* 2>/dev/null || true
+          cp -a lib_keep/* lib/ 2>/dev/null || true
+          cp -a lib64_keep/* lib64/ 2>/dev/null || true
+          rm -rf lib_keep lib64_keep
+
+      - name: Verify Size
+        working-directory: ${{ github.workspace }}
+        run: |
+          echo "=== Rootfs Size ==="
+          du -sh rootfs
+          echo "=== Top 20 Largest ==="
+          du -sh rootfs/* 2>/dev/null | sort -rh | head -20
+
+      - name: Create 1GB Disk Image
+        working-directory: ${{ github.workspace }}
+        run: |
+          truncate -s 1G disk.img
+          mkfs.ext4 -L rootfs -F disk.img
+
+          mkdir -p mnt
+          sudo mount -o loop disk.img mnt
+          sudo cp -a rootfs/* mnt/
+          sudo sync
+          sudo umount mnt
+          rmdir mnt
+
+          xz -T0 -9 disk.img
+          ls -lh disk.img.xz
+
+      - name: Create Rootfs Archive
+        working-directory: ${{ github.workspace }}
+        run: |
+          tar -cJf rootfs.tar.xz -C rootfs .
+          ls -lh rootfs.tar.xz
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rootfs-artifacts
+          path: |
+            disk.img.xz
+            rootfs.tar.xz
+          
