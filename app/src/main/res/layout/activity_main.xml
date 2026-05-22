@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0D1117">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- Header -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🌤 Hava Durumu Çubuğu"
+            android:textSize="22sp"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Bildirim çubuğunuza anlık hava durumu ekleyin"
+            android:textSize="13sp"
+            android:textColor="#8B949E"
+            android:layout_marginBottom="20dp"/>
+
+        <!-- Status Bar Preview -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ÖN İZLEME"
+            android:textColor="#8B949E"
+            android:textSize="11sp"
+            android:layout_marginBottom="6dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/preview_bg"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:layout_marginBottom="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="12:39"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold"/>
+
+            <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
+
+            <TextView
+                android:id="@+id/tvPreview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⛅ 23°C"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:layout_marginRight="8dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📶🔋71%"
+                android:textColor="#FFFFFF"
+                android:textSize="11sp"/>
+        </LinearLayout>
+
+        <!-- City -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="📍 ŞEHİR" android:textColor="#8B949E" android:textSize="11sp"
+            android:layout_marginBottom="6dp"/>
+
+        <EditText
+            android:id="@+id/etCity"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:background="@drawable/input_bg"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#4A5568"
+            android:hint="Örn: Istanbul, Ankara, Izmir..."
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:inputType="textCapWords"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- API -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="🌐 HAVA DURUMU API HİZMETİ" android:textColor="#8B949E"
+            android:textSize="11sp" android:layout_marginBottom="6dp"/>
+
+        <Spinner android:id="@+id/spinnerApi" android:layout_width="match_parent"
+            android:layout_height="52dp" android:background="@drawable/input_bg"
+            android:paddingLeft="16dp" android:layout_marginBottom="16dp"/>
+
+        <!-- API Key (conditional) -->
+        <LinearLayout android:id="@+id/layoutApiKey" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="🔑 API ANAHTARI" android:textColor="#8B949E"
+                android:textSize="11sp" android:layout_marginBottom="6dp"/>
+
+            <EditText android:id="@+id/etApiKey" android:layout_width="match_parent"
+                android:layout_height="52dp" android:background="@drawable/input_bg"
+                android:textColor="#FFFFFF" android:textColorHint="#4A5568"
+                android:hint="API anahtarınızı girin"
+                android:paddingLeft="16dp" android:paddingRight="16dp"
+                android:inputType="textPassword" android:layout_marginBottom="16dp"/>
+        </LinearLayout>
+
+        <!-- Temperature Unit -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="🌡 SICAKLIK BİRİMİ" android:textColor="#8B949E"
+            android:textSize="11sp" android:layout_marginBottom="8dp"/>
+
+        <RadioGroup android:id="@+id/rgUnit" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <RadioButton android:id="@+id/rbCelsius"
+                android:layout_width="0dp" android:layout_height="52dp"
+                android:layout_weight="1" android:text="°C  Celsius"
+                android:textColor="#FFFFFF" android:background="@drawable/radio_selector"
+                android:button="@null" android:gravity="center" android:checked="true"/>
+
+            <View android:layout_width="8dp" android:layout_height="match_parent"/>
+
+            <RadioButton android:id="@+id/rbFahrenheit"
+                android:layout_width="0dp" android:layout_height="52dp"
+                android:layout_weight="1" android:text="°F  Fahrenheit"
+                android:textColor="#FFFFFF" android:background="@drawable/radio_selector"
+                android:button="@null" android:gravity="center"/>
+        </RadioGroup>
+
+        <!-- Interval -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="⏱ YENİLEME SIKLIĞI" android:textColor="#8B949E"
+            android:textSize="11sp" android:layout_marginBottom="6dp"/>
+
+        <Spinner android:id="@+id/spinnerInterval" android:layout_width="match_parent"
+            android:layout_height="52dp" android:background="@drawable/input_bg"
+            android:paddingLeft="16dp" android:layout_marginBottom="16dp"/>
+
+        <!-- Icon Pack -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="🎨 İKON PAKETİ" android:textColor="#8B949E"
+            android:textSize="11sp" android:layout_marginBottom="6dp"/>
+
+        <Spinner android:id="@+id/spinnerIconPack" android:layout_width="match_parent"
+            android:layout_height="52dp" android:background="@drawable/input_bg"
+            android:paddingLeft="16dp" android:layout_marginBottom="24dp"/>
+
+        <!-- Buttons -->
+        <Button android:id="@+id/btnSave" android:layout_width="match_parent"
+            android:layout_height="52dp" android:text="💾  Ayarları Kaydet"
+            android:textColor="#FFFFFF" android:background="@drawable/btn_secondary"
+            android:textSize="15sp" android:layout_marginBottom="12dp"/>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:layout_marginBottom="16dp">
+
+            <Button android:id="@+id/btnStart" android:layout_width="0dp"
+                android:layout_height="52dp" android:layout_weight="1"
+                android:text="▶  Başlat" android:textColor="#FFFFFF"
+                android:background="@drawable/btn_primary" android:textSize="15sp"/>
+
+            <View android:layout_width="10dp" android:layout_height="match_parent"/>
+
+            <Button android:id="@+id/btnStop" android:layout_width="0dp"
+                android:layout_height="52dp" android:layout_weight="1"
+                android:text="⏹  Durdur" android:textColor="#FFFFFF"
+                android:background="@drawable/btn_danger" android:textSize="15sp"/>
+        </LinearLayout>
+
+        <TextView android:id="@+id/tvStatus" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="Durum: Bekleniyor ⏳"
+            android:textColor="#8B949E" android:textSize="13sp" android:gravity="center"
+            android:layout_marginBottom="8dp"/>
+
+        <!-- Info Box -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:background="@drawable/info_bg" android:orientation="vertical"
+            android:padding="14dp" android:layout_marginTop="8dp">
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="ℹ️ Bilgi" android:textColor="#58A6FF"
+                android:textSize="13sp" android:textStyle="bold" android:layout_marginBottom="6dp"/>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="• Open-Meteo: Ücretsiz, API anahtarı gereksiz\n• Telefon yeniden başlatılınca otomatik çalışır\n• Bildirim çubuğunda hava durumu görünür"
+                android:textColor="#8B949E" android:textSize="12sp" android:lineSpacingExtra="4dp"/>
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

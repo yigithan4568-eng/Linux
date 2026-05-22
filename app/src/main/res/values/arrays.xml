@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="api_types">
+        <item>Open-Meteo — Ücretsiz, API Anahtarı Gereksiz</item>
+        <item>OpenWeatherMap — API Anahtarı Gerekli</item>
+        <item>WeatherAPI.com — API Anahtarı Gerekli</item>
+    </string-array>
+
+    <string-array name="interval_labels">
+        <item>15 dakikada bir</item>
+        <item>30 dakikada bir</item>
+        <item>1 saatte bir</item>
+        <item>2 saatte bir</item>
+        <item>3 saatte bir</item>
+    </string-array>
+
+    <integer-array name="interval_values">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+        <item>120</item>
+        <item>180</item>
+    </integer-array>
+
+    <string-array name="icon_packs">
+        <item>Emoji Renkli   ☀️ ⛅ 🌧 ❄️ ⛈️</item>
+        <item>Minimal Sembol   ○ ◑ ● ∿ ↯</item>
+        <item>ASCII   ^o^  ~O~  :|  :**</item>
+        <item>Unicode Şekil   ✦ ◈ ▣ ⌇⌇ ⚡</item>
+    </string-array>
+</resources>
